@@ -4,18 +4,20 @@ const jsmodbus = require('jsmodbus');
 const net = require('net');
 
 // --- Configuration ---
-const excelFilePath = path.join(__dirname, '../docs/BASE MODBUS PARA EL VMS DEL SFG.xlsx');
-const sheetName = '7453SFG01'; // Or the specific sheet you need
-const modbusHost = '127.0.0.1';
+const excelFilePath = path.join(__dirname, './BASE MODBUS PARA EL VMS DEL SFG.xlsx');
+const sheetName = '5208SFG01'; // Or the specific sheet you need
+// const modbusHost = '127.0.0.1';
+// const modbusHost = '192.168.73.33';
+const modbusHost = '192.168.53.41';
 const modbusPort = 502;
 const modbusUnitId = 1;
 const readInterval = 5000; // Read every 5 seconds
-const pauseBetweenReads = 50; // 50ms pause between each address read
+const pauseBetweenReads = 100; // 50ms pause between each address read
 
 // --- Placeholder function for processing Modbus values ---
 function processModbusValue(address, value) {
   // TODO: Implement your custom logic here
-  console.log(`Processing Address ${address}: Value: ${value}`);
+  console.log(`Processing Address ${address + 1}: Value: ${value}`);
 }
 
 // --- Utility function for delay ---
@@ -34,7 +36,9 @@ function main() {
       throw new Error(`Sheet "${sheetName}" not found in the Excel file.`);
     }
     const data = xlsx.utils.sheet_to_json(sheet);
-    const addresses = data.map(row => row.ALIASNUM).filter(num => typeof num === 'number');
+    const addresses = data.map(row =>
+      1 + parseInt(row.ALIASNUM.toString().replace(/\D/g, '')) - 30000
+    ).filter(num => typeof num === 'number');
 
     if (addresses.length === 0) {
       console.log('No valid ALIASNUM values found in the Excel sheet.');
@@ -73,10 +77,12 @@ function main() {
 
     async function readAllAddresses() {
       console.log('--- Starting new read cycle ---');
+      console.log(new Date());
       for (const address of addresses) {
         try {
-          console.log(`Reading address: ${address}`);
-          const response = await client.readHoldingRegisters(address, 1);
+          console.log(`Reading address: ${address + 1}`);
+          //const response = await client.readHoldingRegisters(address, 1);
+          const response = await client.readInputRegisters(address, 1);
           const value = response.response.body.valuesAsArray[0];
           processModbusValue(address, value);
         } catch (err) {
