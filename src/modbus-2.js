@@ -17,7 +17,7 @@ const pauseBetweenReads = 100; // 50ms pause between each address read
 // --- Placeholder function for processing Modbus values ---
 function processModbusValue(address, value) {
   // TODO: Implement your custom logic here
-  console.log(`Processing Address ${address + 1}: Value: ${value}`);
+  //console.log(`Processing Address ${address + 1}: Value: ${value}`);
 }
 
 // --- Utility function for delay ---
@@ -26,6 +26,8 @@ function delay(ms) {
 }
 
 function main() {
+
+  // --- Main Logic ---
   try {
     // 1. Read data from Excel file (only once at the start)
     const workbook = xlsx.readFile(excelFilePath);
@@ -59,9 +61,6 @@ function main() {
 
 
     function connect() {
-      /*if (socket.connecting || socket.writable) {
-          return;
-      }*/
       console.log(`Attempting to connect to ${modbusHost}:${modbusPort}...`);
       socket.connect({ host: modbusHost, port: modbusPort });
     }
@@ -77,21 +76,19 @@ function main() {
       console.log('--- Starting new read cycle ---');
       console.log(new Date());
       for (const address of addresses) {
-        try {
-          console.log(`Reading address: ${address + 1}`);
-          //const response = await client.readHoldingRegisters(address, 1);
-          const response = await client.readInputRegisters(address, 1);
-          const value = response.response.body.valuesAsArray[0];
-          processModbusValue(address, value);
-        } catch (err) {
-          console.error(`❌ Error reading address ${address}:`, err.message);
-          // If an error occurs, the connection might have dropped.
-          // The 'close' or 'error' event on the socket will handle reconnection.
-          break; // Exit this read cycle and wait for reconnection
-        }
+        client.readInputRegisters(address, 1)
+          .then(response => {
+            console.log(response.response.body);
+            const value = response.response.body.valuesAsArray[0];
+            processModbusValue(address, value);
+          })
+          .catch(err => {
+            console.error(`❌ Error reading address ${address}:`, err.message);
+          });
+
         // Pause before reading the next address
-        await delay(pauseBetweenReads);
       }
+      await delay(pauseBetweenReads);
       console.log('--- Read cycle finished ---');
     }
 
@@ -104,7 +101,3 @@ function main() {
 }
 
 main();
-
-// const securos = require('securos');
-
-// securos.connect(function (core) { });
